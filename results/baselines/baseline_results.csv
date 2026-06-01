@@ -1,0 +1,11 @@
+Task,Model,Accuracy,Precision,Recall,F1
+Rest vs Load,Logistic Regression,0.9952,0.9977,0.9971,0.9974
+Rest vs Load,SVM,0.9944,0.9945,0.9994,0.997
+Rest vs Load,Random Forest,0.981,0.9869,0.9926,0.9898
+Rest vs Load,KNN,0.98,0.9817,0.9969,0.9893
+Rest vs Load,XGBoost,0.9759,0.9791,0.9952,0.9871
+WM vs VA,Logistic Regression,0.8666,0.7996,0.9906,0.8849
+WM vs VA,SVM,0.8567,0.7862,0.9933,0.8777
+WM vs VA,Random Forest,0.8676,0.8075,0.9772,0.8843
+WM vs VA,KNN,0.8011,0.7594,0.9016,0.8244
+WM vs VA,XGBoost,0.8542,0.7975,0.9629,0.8724
