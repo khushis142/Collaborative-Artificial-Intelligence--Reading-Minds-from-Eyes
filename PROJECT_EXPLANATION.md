@@ -617,3 +617,22 @@ What these plots will tell you about your data:
 Calculated and plot feature importances for all three non-tree models on Task 2 (WM vs VA)
 
 In future: Calculate all feature importance
+
+# Future Tasks & Immediate Priorities
+Here is your roadmap. The items in bold are your primary goals for the next two weeks.
+
+Phase 1: Robust Interpretability (Next 2 Weeks - High Priority)
+
+* Fully integrate SHAP/Permutation Importance across all models: Currently, you have partial implementations. Standardize the reporting so you can compare feature importance across all models (SVM, RF, KNN, XGBoost, LR) for Task 2.
+
+* Consolidate Visualizations: Create a single comparative dashboard of feature importances. This will allow you to answer the "Why" behind your 75% accuracy.
+
+Phase 2: Advanced Refinement (Post-Check-in)
+
+* Hyperparameter Tuning: Use GridSearchCV or Optuna to see if you can squeeze another 2–5% out of the models.
+
+* Feature Engineering: Explore if combining features (e.g., interaction terms like ipas * blink_rate) improves performance.
+
+Phase 3: Deployment Readiness (Final Phase)
+
+* Participant-Adaptive Calibration: Research "Few-Shot Learning" or "Calibration" where a model is trained on many subjects but adapted using just 30 seconds of a new user's data.
