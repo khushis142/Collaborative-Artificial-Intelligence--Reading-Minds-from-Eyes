@@ -565,9 +565,11 @@ LOPO results provide the most realistic estimate of how well the system would ge
 
 ---
 
-## Feature Importance and Model Interpretability
+## Feature Importance and Model Interpretability (Task 2: WM vs VA)
 
 ### What was done
+
+Created python script feature_importance.py to calculate feature importance.
 
 Feature importance analysis was performed using:
 
@@ -596,6 +598,14 @@ The analysis ranks all extracted eye-tracking features by predictive value and p
 
 ### Outputs
 
+* comparison of feature importance of all models for a type of split.
+
+For each type of split and model:
+
+* csv for feature importance.
+* bar chart for logistic regression, svm and knn feature importance.
+* shap beeswarm summary plot for random forest and xgboost.
+
 #### Note: 
 
 Only for 03_participant_split:
@@ -623,7 +633,7 @@ Here is your roadmap. The items in bold are your primary goals for the next two 
 
 Phase 1: Robust Interpretability (Next 2 Weeks - High Priority)
 
-* Fully integrate SHAP/Permutation Importance across all models: Currently, you have partial implementations. Standardize the reporting so you can compare feature importance across all models (SVM, RF, KNN, XGBoost, LR) for Task 2.
+* Fully integrate feature importance (SHAP/Permutation Importance/Model coefficients) across all models: Currently, you have partial implementations. Standardize the reporting so you can compare feature importance across all models (SVM, RF, KNN, XGBoost, LR) for Task 2.
 
 * Consolidate Visualizations: Create a single comparative dashboard of feature importances. This will allow you to answer the "Why" behind your 75% accuracy.
 

@@ -1,0 +1,8 @@
+Feature,RF,XGB,LR,SVM,KNN
+ipas,,,,,
+lhipas,,,,,
+fixation_nums,,,,,
+fixation_durations,,,,,
+blink_rate,,,,,
+saccade_speeds,,,,,
+saccade_peak_speeds,,,,,
