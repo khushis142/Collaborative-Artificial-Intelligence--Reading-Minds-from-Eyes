@@ -573,7 +573,7 @@ Created python script feature_importance.py to calculate feature importance.
 
 Feature importance analysis was performed using:
 
-1. SHAP (SHapley Additive exPlanations): for tree based classifiers (Random Forest, XGBoost)
+1. SHAP (SHapley Additive exPlanations): for tree based classifiers (Random Forest, XGBoost): SHAP (SHapley Additive exPlanations) is an explainable AI framework based on cooperative game theory, specifically Shapley values. It treats every individual feature (e.g., age, income, location) as a "player" in a game, where the final model prediction is the "payout".
 
 2. Model Coefficients: For Linear Models (Logistic Regression & SVM)
 Because you scaled your features using StandardScaler() in your make_task function, the features all share a mean of 0 and a standard deviation of 1. This means the magnitudes of the learned weights or coefficients ($\beta$ coefficients) are directly comparable:
@@ -640,6 +640,9 @@ Phase 1: Robust Interpretability (Next 2 Weeks - High Priority)
 Phase 2: Advanced Refinement (Post-Check-in)
 
 * Hyperparameter Tuning: Use GridSearchCV or Optuna to see if you can squeeze another 2–5% out of the models.
+
+
+-----Too much, not needed-----
 
 * Feature Engineering: Explore if combining features (e.g., interaction terms like ipas * blink_rate) improves performance.
 

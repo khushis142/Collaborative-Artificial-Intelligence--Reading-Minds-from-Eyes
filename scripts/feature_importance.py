@@ -50,7 +50,8 @@ def logistic_regression_importance(
         model,
         feature_names,
         output_dir):
-
+    
+    save_outputs = False
     coef_df = pd.DataFrame({
         "Feature": feature_names,
         "Coefficient": model.coef_[0]
@@ -104,6 +105,8 @@ def svm_importance(
         model,
         feature_names,
         output_dir):
+    
+    save_outputs=False
 
     coef_df = pd.DataFrame({
         "Feature": feature_names,
@@ -159,6 +162,8 @@ def random_forest_shap(
         X_sample,
         feature_names,
         output_dir):
+    
+    save_outputs=False
 
     explainer = shap.TreeExplainer(model)
 
@@ -239,6 +244,8 @@ def xgboost_shap(
         X_sample,
         feature_names,
         output_dir):
+    
+    save_outputs=False
 
     explainer = shap.TreeExplainer(model)
 
@@ -317,6 +324,8 @@ def knn_permutation_importance(
         y_test,
         feature_names,
         output_dir):
+    
+    save_outputs=False
 
     perm = permutation_importance(
         model,
@@ -521,19 +530,107 @@ def generate_all_feature_importance(
         output_dir
     )
 
+
+# ===DELETE THIS===
+# def generate_fold_fi_for_lopo_original(
+#         model_name,
+#         trained_model,
+#         X_test,
+#         y_test,
+#         feature_names,
+#         output_dir):
+    
+#     output_dir.mkdir(
+#         parents=True,
+#         exist_ok=True
+#     )
+
+#     X_sample = pd.DataFrame(
+#         X_test,
+#         columns=feature_names
+#     ).sample(
+#         min(3000, len(X_test)),
+#         random_state=42
+#     )
+
+#     if model_name == "Logistic Regression":
+
+#         imp_df = logistic_regression_importance(
+#             trained_model,
+#             feature_names,
+#             output_dir
+#         )
+
+#     if model_name == "SVM":
+
+#         imp_df = svm_importance(
+#             trained_model,
+#             feature_names,
+#             output_dir
+#         )
+
+#     if model_name == "Random Forest":
+
+#         imp_df = random_forest_shap(
+#             trained_model,
+#             X_sample,
+#             feature_names,
+#             output_dir
+#         )
+
+#     if model_name == "XGBoost":
+
+#         imp_df = xgboost_shap(
+#             trained_model,
+#             X_sample,
+#             feature_names,
+#             output_dir
+#         )
+
+#     if model_name == "KNN":
+
+#         imp_df = knn_permutation_importance(
+#             trained_model,
+#             X_test,
+#             y_test,
+#             feature_names,
+#             output_dir
+#         )
+
+#     if "AbsCoefficient" in imp_df.columns:
+#         imp_df.rename(columns={"AbsCoefficient": "Importance"}, inplace=True)
+
+#     return imp_df
+
+# ======
+# By Claude
+# =======
+
 def generate_fold_fi_for_lopo(
         model_name,
         trained_model,
         X_test,
         y_test,
         feature_names,
-        output_dir):
-    
-    output_dir.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
+        output_dir,
+        save_outputs=False):
+    """
+    Computes feature importance for ONE LOPO fold for ONE model.
+ 
+    save_outputs=False (the default here) means no CSV/PNG is written for
+    this individual fold - only the importance numbers are returned. This
+    is the key fix: previously every fold of every model triggered a full
+    SHAP explainer run + plot + CSV write to a shared filename that was
+    immediately overwritten and later deleted. With 5 models and, say, 20
+    participants, that was up to 100 wasted SHAP/plot computations.
+ 
+    The averaged-across-folds result (computed by the caller, e.g.
+    run_lopo_task_with_fi) is what actually gets saved to disk.
+    """
+ 
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+ 
     X_sample = pd.DataFrame(
         X_test,
         columns=feature_names
@@ -541,52 +638,37 @@ def generate_fold_fi_for_lopo(
         min(3000, len(X_test)),
         random_state=42
     )
-
-    if model_name == "Logistic Regression":
-
-        imp_df = logistic_regression_importance(
-            trained_model,
-            feature_names,
-            output_dir
+ 
+    # Dispatch table instead of a chain of bare `if` statements with no
+    # `else`. Previously an unrecognised model_name would silently leave
+    # `imp_df` undefined and crash with a confusing NameError later on.
+    dispatch = {
+        "Logistic Regression": lambda: logistic_regression_importance(
+            trained_model, feature_names, output_dir
+        ),
+        "SVM": lambda: svm_importance(
+            trained_model, feature_names, output_dir
+        ),
+        "Random Forest": lambda: random_forest_shap(
+            trained_model, X_sample, feature_names, output_dir
+        ),
+        "XGBoost": lambda: xgboost_shap(
+            trained_model, X_sample, feature_names, output_dir
+        ),
+        "KNN": lambda: knn_permutation_importance(
+            trained_model, X_test, y_test, feature_names, output_dir
+        ),
+    }
+ 
+    if model_name not in dispatch:
+        raise ValueError(
+            f"generate_fold_fi_for_lopo: unknown model_name '{model_name}'. "
+            f"Expected one of {list(dispatch.keys())}."
         )
-
-    if model_name == "SVM":
-
-        imp_df = svm_importance(
-            trained_model,
-            feature_names,
-            output_dir
-        )
-
-    if model_name == "Random Forest":
-
-        imp_df = random_forest_shap(
-            trained_model,
-            X_sample,
-            feature_names,
-            output_dir
-        )
-
-    if model_name == "XGBoost":
-
-        imp_df = xgboost_shap(
-            trained_model,
-            X_sample,
-            feature_names,
-            output_dir
-        )
-
-    if model_name == "KNN":
-
-        imp_df = knn_permutation_importance(
-            trained_model,
-            X_test,
-            y_test,
-            feature_names,
-            output_dir
-        )
-
+ 
+    imp_df = dispatch[model_name]()
+ 
     if "AbsCoefficient" in imp_df.columns:
-        imp_df.rename(columns={"AbsCoefficient": "Importance"}, inplace=True)
-
+        imp_df = imp_df.rename(columns={"AbsCoefficient": "Importance"})
+ 
     return imp_df
