@@ -637,7 +637,7 @@ Phase 1: Robust Interpretability (Next 2 Weeks - High Priority)
 
 * Consolidate Visualizations: Create a single comparative dashboard of feature importances. This will allow you to answer the "Why" behind your 75% accuracy.
 
-Phase 2: Advanced Refinement (Post-Check-in)
+Phase 2: Advanced Refinement (Post-Check-in) ---we are here
 
 * Hyperparameter Tuning: Use GridSearchCV or Optuna to see if you can squeeze another 2–5% out of the models.
 
