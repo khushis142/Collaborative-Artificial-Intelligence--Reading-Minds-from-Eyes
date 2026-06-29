@@ -1,0 +1,6 @@
+Task,Model,Default Acc,Tuned Acc,Gain (pp)
+WM vs VA,Logistic Regression,0.7225,0.7225,0.0
+WM vs VA,SVM,0.7162,0.7164,0.02
+WM vs VA,Random Forest,0.7956,0.7903,-0.53
+WM vs VA,KNN,0.737,0.752,1.5
+WM vs VA,XGBoost,0.7986,0.801,0.24

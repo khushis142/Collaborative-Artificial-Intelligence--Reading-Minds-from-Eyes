@@ -169,7 +169,7 @@ def random_forest_shap(
 
     X_sample_df = pd.DataFrame(X_sample, columns = feature_names)
 
-    X_sampled_subset = X_sample_df.sample(100, random_state=42)
+    X_sampled_subset = X_sample_df.sample(500, random_state=42)
 
     shap_values = explainer.shap_values(
         X_sampled_subset
@@ -251,7 +251,7 @@ def xgboost_shap(
 
     X_sample_df = pd.DataFrame(X_sample, columns = feature_names)
 
-    X_sampled_subset = X_sample_df.sample(100, random_state=42)
+    X_sampled_subset = X_sample_df.sample(500, random_state=42)
 
     shap_values = explainer.shap_values(
         X_sampled_subset
@@ -530,81 +530,6 @@ def generate_all_feature_importance(
         output_dir
     )
 
-
-# ===DELETE THIS===
-# def generate_fold_fi_for_lopo_original(
-#         model_name,
-#         trained_model,
-#         X_test,
-#         y_test,
-#         feature_names,
-#         output_dir):
-    
-#     output_dir.mkdir(
-#         parents=True,
-#         exist_ok=True
-#     )
-
-#     X_sample = pd.DataFrame(
-#         X_test,
-#         columns=feature_names
-#     ).sample(
-#         min(3000, len(X_test)),
-#         random_state=42
-#     )
-
-#     if model_name == "Logistic Regression":
-
-#         imp_df = logistic_regression_importance(
-#             trained_model,
-#             feature_names,
-#             output_dir
-#         )
-
-#     if model_name == "SVM":
-
-#         imp_df = svm_importance(
-#             trained_model,
-#             feature_names,
-#             output_dir
-#         )
-
-#     if model_name == "Random Forest":
-
-#         imp_df = random_forest_shap(
-#             trained_model,
-#             X_sample,
-#             feature_names,
-#             output_dir
-#         )
-
-#     if model_name == "XGBoost":
-
-#         imp_df = xgboost_shap(
-#             trained_model,
-#             X_sample,
-#             feature_names,
-#             output_dir
-#         )
-
-#     if model_name == "KNN":
-
-#         imp_df = knn_permutation_importance(
-#             trained_model,
-#             X_test,
-#             y_test,
-#             feature_names,
-#             output_dir
-#         )
-
-#     if "AbsCoefficient" in imp_df.columns:
-#         imp_df.rename(columns={"AbsCoefficient": "Importance"}, inplace=True)
-
-#     return imp_df
-
-# ======
-# By Claude
-# =======
 
 def generate_fold_fi_for_lopo(
         model_name,

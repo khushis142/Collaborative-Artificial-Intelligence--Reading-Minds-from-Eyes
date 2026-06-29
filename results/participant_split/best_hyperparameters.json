@@ -1,0 +1,32 @@
+{
+  "task2": {
+    "Logistic Regression": {
+      "C": 0.0010221922977737942
+    },
+    "SVM": {
+      "C": 0.0010963714327503157
+    },
+    "Random Forest": {
+      "n_estimators": 100,
+      "max_depth": 6,
+      "min_samples_split": 8,
+      "min_samples_leaf": 5,
+      "max_features": "sqrt"
+    },
+    "KNN": {
+      "n_neighbors": 31,
+      "weights": "uniform",
+      "p": 1
+    },
+    "XGBoost": {
+      "n_estimators": 200,
+      "max_depth": 5,
+      "learning_rate": 0.0010294581999301011,
+      "subsample": 0.8223972680035051,
+      "colsample_bytree": 0.5258350549942348,
+      "min_child_weight": 7,
+      "reg_alpha": 0.0011684542191874139,
+      "reg_lambda": 0.0010502569671230373
+    }
+  }
+}

@@ -626,7 +626,51 @@ What these plots will tell you about your data:
 
 Calculated and plot feature importances for all three non-tree models on Task 2 (WM vs VA)
 
-In future: Calculate all feature importance
+### LOPO feature importance 
+
+Calculated Feature importance for each model in leave one participant out cross validation.
+
+## Hyperparameter Tuning with Optuna
+
+### For Participant level split
+
+Hyperparameter search needs to respect participant grouping too, otherwise you reintroduce the same leakage problem you just fixed with the participant-level split. If you tune hyperparameters with plain k-fold CV on the training data, folds will mix windows from the same participant across train/validation within the inner loop, and you'll pick hyperparameters that overfit to person-specific signal — defeating the purpose of your whole notebook.
+So the right approach is: GroupKFold (or StratifiedGroupKFold) using participant as the group, nested inside the Optuna objective, evaluated only on train_df/train_participants. The held-out 4 test participants stay completely untouched until final evaluation.
+
+#### Results:
+
+   Task               Model  Default Acc  Tuned Acc  Gain (pp)
+WM vs VA Logistic Regression       0.7518     0.7528       0.10
+WM vs VA                 SVM       0.7503     0.7504       0.01
+WM vs VA       Random Forest       0.7101     0.7154       0.53
+WM vs VA                 KNN       0.7026     0.7224       1.98
+WM vs VA             XGBoost       0.6960     0.7182       2.22
+
+Based on your benchmark results, Logistic Regression is actually your best-performing model, even with the tiny 0.10 percentage point gain from tuning.Here is a critical analysis of your data table and what it tells us about your eye-tracking dataset:
+1. Your Baseline Models Were Already Optimized
+The default configurations for Logistic Regression (0.7518) and SVM (0.7503) beat the tuned versions of Random Forest, KNN, and XGBoost. This means your default parameters were already sitting at or near the performance ceiling.
+2. The Data is Highly Linear
+Linear Dominance: Logistic Regression and SVM (which uses a linear kernel here) outperform tree-based ensembles (Random Forest, XGBoost) and distance models (KNN). Tree Models Overfitting: Tree models usually struggle with raw eye-tracking time-series or coordinate data because they split features perpendicularly. This results in poor generalization compared to smooth linear decision boundaries.
+3. The 75% Performance WallNotice how every single model caps out between 71% and 75% after tuning. This strongly implies that 75% is the absolute predictive ceiling for your current feature set. No amount of hyperparameter tuning will push any of these models to 80%. The bottleneck is the data itself, not the models.
+
+### For Global 80/20 split (time sorted)
+
+Here participants legitimately appear in both train and test, so there's no leakage principle to defend inside CV — but you still shouldn't use plain KFold if you want the inner validation to mimic the outer split. Strictly, the "correct" thing would be a time-based inner split (e.g. TimeSeriesSplit) rather than GroupKFold, since your outer test set is the last 20% in time, not a random subset.
+In practice, most people get away with plain KFold (shuffled) here since the leakage already exists at the outer level — adding more of the same leakage in the inner loop doesn't make tuning invalid, it's just consistent with the overly-optimistic nature of this strategy.  We have used plain Kfold.
+
+### For Per-Participant 80/20 (stratified)
+
+Same situation as Global 80/20 split conceptually: train and test share participants by design, so there's no cross-subject leakage to protect against at the outer level. The natural inner CV is a stratified KFold by label (since you already stratify by participant+label for the outer split)
+
+### Why no optuna for LOPO?
+
+The core problem is that LOPO with ~21 participants gives you 21 outer folds, and doing this properly requires nested tuning — re-running Optuna inside every fold using only the remaining 20 participants, so the held-out person never influences hyperparameter selection. That's the only version that's methodologically sound, but it multiplies your computational cost by roughly 21× (folds) × 40 (trials) × 5 (inner CV splits) per model — thousands of fits for tree-based models alone. If you instead tune once and reuse the same hyperparameters across all 21 folds (the cheaper shortcut), you reintroduce a subtle form of leakage: those hyperparameters were chosen using a split that overlaps with most of your LOPO test participants, so the "held-out" fold isn't truly independent of the tuning process anymore. Either way you pay a real cost — in compute if you do it right, or in methodological cleanliness if you don't — and that tradeoff is hard to justify on a 21-participant dataset.
+
+The second issue is statistical, not computational: with so few participants, your per-fold test set is a single person, and Optuna's job is to squeeze out marginal accuracy gains by fitting the validation folds it sees. But those validation folds are themselves built from only 16–20 participants, so the "optimal" hyperparameters Optuna finds are highly sensitive to exactly which individuals happen to be in the inner training/validation split that trial. You'd essentially be tuning to idiosyncrasies of a handful of people, then hoping that generalizes to a fold-by-fold setup whose entire purpose is to test generalization across unseen individuals. In other words, Optuna's optimization signal and LOPO's variance source are the same thing — inter-subject differences — so tuning doesn't reduce the noise in your LOPO estimates, it just adds another layer of fitting to that noise. Given that, your LOPO accuracy spread (mean ± standard deviation across folds) is more informative left untouched, using the hyperparameters already validated and chosen via your Strategy 3 cross-subject split — letting LOPO serve as an independent robustness check rather than another thing to optimize.
+
+
+
+--- Done ----
 
 # Future Tasks & Immediate Priorities
 Here is your roadmap. The items in bold are your primary goals for the next two weeks.
