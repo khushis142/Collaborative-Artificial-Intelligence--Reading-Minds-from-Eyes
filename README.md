@@ -102,6 +102,6 @@ Then run the notebooks in order: `01_exploration.ipynb` → `02_baselines.ipynb`
 
 ## Authors
 
-Collaborative project by [Khushi Sharma](https://github.com/khushis142) and Avantika Ajit for Collaborative Artificial Intelligence Lab SS26, Universität Stuttgart
+Collaborative project by [Khushi Shah](https://github.com/khushis142) and [Avantika Ajit](https://github.com/av0422) for Collaborative Artificial Intelligence Lab SS26, Universität Stuttgart
 
 See `PROJECT_EXPLANATION.md` for the full methodological write-up, including step-by-step rationale for every design decision.
