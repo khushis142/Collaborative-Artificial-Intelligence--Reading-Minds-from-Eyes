@@ -651,7 +651,8 @@ Based on your benchmark results, Logistic Regression is actually your best-perfo
 The default configurations for Logistic Regression (0.7518) and SVM (0.7503) beat the tuned versions of Random Forest, KNN, and XGBoost. This means your default parameters were already sitting at or near the performance ceiling.
 2. The Data is Highly Linear
 Linear Dominance: Logistic Regression and SVM (which uses a linear kernel here) outperform tree-based ensembles (Random Forest, XGBoost) and distance models (KNN). Tree Models Overfitting: Tree models usually struggle with raw eye-tracking time-series or coordinate data because they split features perpendicularly. This results in poor generalization compared to smooth linear decision boundaries.
-3. The 75% Performance WallNotice how every single model caps out between 71% and 75% after tuning. This strongly implies that 75% is the absolute predictive ceiling for your current feature set. No amount of hyperparameter tuning will push any of these models to 80%. The bottleneck is the data itself, not the models.
+3. The 75% Performance Wall
+Notice how every single model caps out between 71% and 75% after tuning. This strongly implies that 75% is the absolute predictive ceiling for your current feature set. No amount of hyperparameter tuning will push any of these models to 80%. The bottleneck is the data itself, not the models.
 
 ### For Global 80/20 split (time sorted)
 

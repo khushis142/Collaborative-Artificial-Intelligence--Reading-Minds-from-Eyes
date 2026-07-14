@@ -1,107 +1,131 @@
-# Reading Minds from Eyes: Decoding Cognitive Load with Machine Learning
+# Reading Minds from Eyes: Decoding Cognitive Load from Eye-Tracking Signals with Machine Learning
 
-A machine learning pipeline that detects **cognitive load** from eye-tracking signals — pupil dilation, fixations, blinks, and saccades — using classical ML classifiers, rigorously evaluated across multiple cross-validation strategies.
+Collaborative Artificial Intelligence Group, University of Stuttgart
+Authors: Avantika Ajit, Khushi Shah
+Supervisor: Dr. Xiaofu Jin
 
-This project replicates and extends the benchmark set by **Jin et al. (2025)**, exceeding their reported 62.3% accuracy on the hardest classification task while providing a much more thorough (and honest) evaluation of what that accuracy actually means.
+## What this project does
 
-## Overview
+When a person's cognitive load goes up, their eyes behave differently: pupils change size, fixations last longer or shorter, blink rate drops, and saccades speed up or slow down. This project builds a machine learning pipeline that takes raw eye-tracking recordings, turns them into numerical features, and trains classifiers to predict which cognitive state a person is in from those features alone.
 
-When people are under mental strain — working memory tasks, visual search, sustained attention — their eyes behave differently: pupils dilate or constrict, fixations lengthen or shorten, blink rate drops, and saccades speed up. This project turns those raw ocular signals into a labeled feature set and trains classifiers to predict the wearer's cognitive state.
+The pipeline follows this path:
 
 ```
-Raw eye signal → Feature extraction → Exploratory analysis → Modelling → Evaluation
+Raw eye signal -> Feature extraction -> Exploratory analysis -> Modelling -> Evaluation -> Interpretability
 ```
 
-**Dataset:** 347,196 sliding-window samples (512-sample windows, 18 columns) from 21 participants, each labeled with one of 7 cognitive states:
+Two questions drive the project:
 
-| Label | State |
+1. Can a model tell whether someone is at rest or under cognitive load (**Rest vs Load**)?
+2. Can a model tell what *type* of load someone is under, working memory or visual attention (**WM vs VA**)?
+
+The second question is the harder and more interesting one, and it is the main benchmark used throughout this repository. It is also the task reported by Jin et al. (2025), whose 62.3% SVM accuracy is the number we compare all our results against.
+
+## Dataset
+
+- 528,017 raw eye-tracking samples from 21 participants (ids p1 to p22, no p2).
+- 7 cognitive states: rest, working memory (3 difficulty levels), visual attention (3 difficulty levels).
+- Recorded during an N-back task (working memory) and a visual search task (visual attention).
+- Raw samples were cut into sliding windows of 512 samples with a step of 511 (near-zero overlap), producing **347,196 windows**, each described by 8 engineered features plus participant and label metadata.
+
+### Features extracted per window
+
+| Feature | What it captures |
 |---|---|
-| 0 | Rest (no task) |
-| 1–3 | Working Memory (WM), increasing difficulty |
-| 4–6 | Visual Attention (VA), increasing difficulty |
+| `ipas` | Index of Pupillary Activity, short-term pupil fluctuation |
+| `lhipas` | Ratio of slow to fast pupil changes, a more robust load indicator |
+| `fixation_nums` | Number of fixations in the window |
+| `fixation_durations` | Mean fixation duration |
+| `blink_rate` | Number of blinks in the window |
+| `saccade_speeds` | Mean saccade velocity |
+| `saccade_peak_speeds` | Peak saccade velocity |
+| `diameter` | Mean pupil diameter |
 
-**Features per window:** IPA / LHIPA (pupillary activity indices), fixation count and duration, blink rate, saccade speed and peak speed, and pupil diameter.
-
-**Two classification tasks:**
-- **Rest vs Load** — is the person under any cognitive load at all? (easy, ~99% accuracy across all models)
-- **WM vs VA** — what *type* of load are they under? (hard, the paper's actual benchmark task)
-
-## Key Result
-
-Split strategy alone swings WM-vs-VA accuracy by **10–15 percentage points**. Reporting a single number without saying how the data was split is close to meaningless for this kind of task.
-
-| Split Strategy | SVM | Random Forest | KNN | XGBoost | Logistic Regression |
-|---|---|---|---|---|---|
-| Global 80/20 (optimistic) | 85.5% | 87.0% | 79.7% | 84.5% | 86.7% |
-| Jin et al. per-participant | 71.2% | 79.4% | 72.9% | 80.4% | 72.3% |
-| Participant-level (held-out subjects) | 75.0% | 71.7% | 69.7% | 70.0% | 75.2% |
-| **LOPO (all 21 participants, averaged)** | **75.1%** | 74.7% | 69.2% | 73.7% | 75.7% |
-| Jin et al. (2025) reported benchmark | 62.3% | — | — | — | — |
-
-All strategies beat the published benchmark; the Leave-One-Participant-Out (LOPO) result is the most defensible number, since it tests generalization to every participant exactly once rather than relying on a single random train/test draw.
-
-## Repository Structure
+### Labels
 
 ```
-.
-├── notebooks/
-│   ├── 01_exploration.ipynb        # EDA: class balance, NaN checks, feature distributions
-│   ├── 02_baselines.ipynb          # Baselines with a global time-based 80/20 split
-│   ├── 03_participant_split.ipynb  # Baselines with a held-out-subjects split
-│   └── 03_jin_split.ipynb          # Baselines replicating Jin et al.'s per-participant split
-├── scripts/
-│   └── feature_importance.py       # SHAP / coefficient / permutation importance across all models
-├── results/                        # Metrics CSVs, confusion matrices, importance plots
-├── data.zip                        # Eye-tracking feature dataset
-├── requirements.txt
-├── PROJECT_EXPLANATION.md          # Full write-up: methodology, rationale, related work
-└── Project_explanation_and_status.docx
+0  Rest
+1-3  Working Memory (easy, medium, hard)
+4-6  Visual Attention (easy, medium, hard)
 ```
 
-## Methodology
+These are collapsed into two binary tasks used for classification:
 
-**1. Data verification** — confirm shape, columns, and integrity before any modelling.
+- **Task 1: Rest vs Load** — label 0 vs labels 1-6.
+- **Task 2: WM vs VA** — rest excluded, labels 1-3 vs labels 4-6.
 
-**2. Exploratory analysis** (`01_exploration.ipynb`) — class balance across all 7 states and both binary splits, missing-value checks, and box plots of each feature by state to check discriminability before feature selection.
+## Models
 
-**3. Baseline modelling** — four classical models (SVM/LinearSVC, Random Forest, KNN, XGBoost), later joined by Logistic Regression as a fifth baseline, trained on both binary tasks under **three different split strategies**:
+Five classical machine learning models are trained and compared on both tasks:
 
-- **Global 80/20** — sorted by participant then window index, no shuffling. Optimistic: the same participants can appear in both train and test.
-- **Jin et al. per-participant** — for each participant and label, first 80% of windows (by index) go to train, last 20% to test. The closest replication of the original paper's protocol; required because the experiment used a block task design (WM → VA → Rest sequentially), so a naive temporal cut per participant would leave entire task blocks out of training.
-- **Participant-level (cross-subject)** — 4 of 21 participants held out entirely as test subjects (`numpy.random.default_rng(42)`). Tests generalization to unseen individuals — the realistic deployment scenario.
+- Logistic Regression
+- Linear SVM (`LinearSVC`, chosen over an RBF kernel purely for speed on ~280k training rows)
+- Random Forest
+- K-Nearest Neighbours
+- XGBoost
 
-**4. Leave-One-Participant-Out (LOPO) cross-validation** — every participant serves as the test set exactly once, with results averaged across all 21 folds. This is the most stable, most defensible cross-subject estimate in the project, removing the dependency on a single random held-out split.
+All features are standardised with `StandardScaler`, fitted on the training set only and applied to the test set, to avoid leaking test statistics into training.
 
-**5. Feature importance / interpretability** (`feature_importance.py`) — three methods, matched to model type:
-- **SHAP values** for tree-based models (Random Forest, XGBoost)
-- **Standardized model coefficients** for linear models (Logistic Regression, SVM)
-- **Permutation importance** for KNN, which has no native notion of feature weight
+## Evaluation strategies
 
-All features are z-scored via `StandardScaler` fit only on training data to avoid leakage; for the participant-level and LOPO splits, the scaler is fit exclusively on training participants.
+Accuracy on this kind of data depends heavily on *how* you split train and test, so four different strategies were implemented and compared:
 
-## Related Work
+| Split strategy | What it tests | Best WM vs VA accuracy |
+|---|---|---|
+| Global 80/20 (time-ordered) | Same participants in train and test | 87.0% (Random Forest) |
+| Jin et al. per-participant split | Same participants, later windows held out | 80.4% (XGBoost) |
+| Participant-level split (4 held-out participants) | Fully unseen individuals | 75.2% (Logistic Regression) |
+| Leave-One-Participant-Out (LOPO, 21 folds) | Fully unseen individuals, averaged over everyone | 75.7% +/- 11.8% (Logistic Regression) |
+| Jin et al. (2025) reported benchmark | — | 62.3% (SVM) |
 
-This project builds directly on:
-- **Jin et al. (2025)** — the paper this dataset and benchmark (62.3% SVM accuracy on WM vs VA) come from.
-- **Kosch et al. (2023)** — a 579-paper survey validating eye-tracking as a reliable cognitive workload signal.
-- **Ekin et al. (2025)** — confirms WM and VA loads produce distinct, but individual-dependent, ocular signatures.
-- **Molloy et al. (2026)** — a systematic review confirming SVM and Random Forest as consistently strong choices for this class of problem.
+**Every model, under every split strategy, beats the published 62.3% benchmark.** The more cross-subject-realistic the split, the lower and more honest the accuracy becomes: the 10-15 percentage point drop between the global split and the participant-level split quantifies how much person-specific signal the models were exploiting when participants leaked across train and test. LOPO is the strategy we consider the most trustworthy, since it tests generalisation to every participant exactly once instead of relying on a single random draw of held-out people.
 
-Full citations and paper-by-paper takeaways are in `PROJECT_EXPLANATION.md`.
+Rest vs Load stays around 99% under every split, because rest and load are physiologically distinct regardless of who the person is. WM vs VA is the harder, more person-dependent distinction, which is why it is the one that drops.
 
-## Setup
+## Interpretability
 
-```bash
-git clone https://github.com/khushis142/Collaborative-Artificial-Intelligence--Reading-Minds-from-Eyes.git
-cd Collaborative-Artificial-Intelligence--Reading-Minds-from-Eyes
-pip install -r requirements.txt
-unzip data.zip
-```
+Feature importance for Task 2 (WM vs VA) was computed with a method appropriate to each model type:
 
-Then run the notebooks in order: `01_exploration.ipynb` → `02_baselines.ipynb` → `03_participant_split.ipynb` / `03_jin_split.ipynb`.
+- **SHAP** for the tree-based models (Random Forest, XGBoost).
+- **Standardised model coefficients** for the linear models (Logistic Regression, SVM), which are directly comparable because all features share the same scale.
+- **Permutation importance** for KNN, which has no internal weights to inspect.
 
-## Authors
+Across all five models and every split strategy, the ranking is consistent:
 
-Collaborative project by [Khushi Shah](https://github.com/khushis142) and [Avantika Ajit](https://github.com/av0422) for Collaborative Artificial Intelligence Lab SS26, Universität Stuttgart
+1. `fixation_durations` — by far the strongest predictor.
+2. `saccade_speeds` and `saccade_peak_speeds` — consistently the next most important.
+3. `blink_rate` and `fixation_nums` — moderate contribution.
+4. `ipas` and `lhipas` — consistently the least discriminative features for this task.
 
-See `PROJECT_EXPLANATION.md` for the full methodological write-up, including step-by-step rationale for every design decision.
+## Hyperparameter tuning
+
+Optuna was used to tune all five models, with the search nested inside `GroupKFold` (grouped by participant) so that tuning never mixes windows from the same person across the inner train/validation split. Tuning was **not** run for LOPO: doing it properly would require re-running the search inside every one of the 21 folds, which is computationally prohibitive, and doing it cheaply (tuning once, reusing the result) would quietly reintroduce the same cross-subject leakage that LOPO exists to avoid.
+
+Tuning results on the participant-level split:
+
+| Model | Default Acc | Tuned Acc | Gain |
+|---|---|---|---|
+| Logistic Regression | 75.18% | 75.28% | +0.10 pp |
+| SVM | 75.03% | 75.04% | +0.01 pp |
+| Random Forest | 71.01% | 71.54% | +0.53 pp |
+| KNN | 70.26% | 72.24% | +1.98 pp |
+| XGBoost | 69.60% | 71.82% | +2.22 pp |
+
+The gains are small everywhere, and Logistic Regression, already the best default model, barely moves. This suggests the current feature set has a real performance ceiling around 75% for cross-subject WM vs VA classification, and that pushing past it will need richer features or participant-adaptive calibration rather than more tuning.
+
+
+
+## Key takeaways
+
+- 75% (LOPO) is likely close to the practical ceiling for this feature set.
+- Logistic Regression outperforming the tree-based models suggests the WM vs VA decision boundary is close to linear in this feature space.
+- Our results (75.7% LOPO) substantially exceed the 62.3% reported by Jin et al. (2025); we do not have access to their exact split implementation, so we treat this as most likely due to differences in evaluation protocol rather than a stronger model.
+- LOPO variance is high (+/- 11.8 pp): per-participant accuracy ranges from 52.3% (near chance, for one participant) to 91.2% (for another), showing that the WM/VA signal itself is far more separable for some individuals than others.
+- Only classical machine learning was evaluated here. Per Jin et al., deep learning (LSTM, Transformer) underperforms classical ML on this dataset, which is why it was not a priority for this project.
+
+## References
+
+- Kosch et al. (2023), *A survey on measuring cognitive workload in human-computer interaction*, ACM Computing Surveys.
+- Jin et al. (2025), *Decoding Cognitive Load: Eye-Tracking Insights into Working Memory and Visual Attention*, ETRA '25. Primary reference and source of the 62.3% benchmark.
+- Ekin et al. (2025), *Prediction of Intrinsic and Extraneous Cognitive Load with Oculometric and Biometric Indicators*, Scientific Reports.
+- Molloy et al. (2026), *Machine Learning Methods for Cognitive Load Analysis and Classification in Aviation: A Systematic Review*, International Journal of Human-Computer Interaction.
